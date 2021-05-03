@@ -1,6 +1,7 @@
+#include "Trajectory.hpp"
+
 #include "mbed.h"
 #include "stm32f4xx.h"
-#include "Eigen/Eigen"
 
 // Memory requirements
 // Buffer:
