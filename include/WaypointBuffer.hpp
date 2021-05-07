@@ -20,10 +20,10 @@ public:
 private:
     static const uint8_t SIZE = 8;
 
-    Waypoint _buffer[SIZE];
-    uint8_t _head;
-    uint8_t _tail;
-    uint8_t _current_size;
+    Waypoint buffer_[SIZE];
+    uint8_t head_;
+    uint8_t tail_;
+    uint8_t current_size_;
 };
 
 #endif  // _WAYPOINT_BUFFER_HPP

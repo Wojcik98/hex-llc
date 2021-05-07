@@ -1,10 +1,11 @@
 #ifndef _WAYPOINT_HPP
 #define _WAYPOINT_HPP
 
-#include "Pose.hpp"
+#include "Configuration.hpp"
 #include "Timestamp.hpp"
 
-class Waypoint{
+
+class Waypoint {
 public:
     enum Phase {
         SUPPORT,
@@ -12,25 +13,31 @@ public:
         FALL
     };
 
-    Waypoint(Pose pose, Timestamp timeFromStart, Phase phase) : _pose(pose), _timeFromStart(timeFromStart), _phase(phase) {}
+    Waypoint(Configuration configuration, Configuration velocity, Timestamp timeFromStart, Phase phase)
+        : configuration_(configuration), velocity_(velocity), timeFromStart_(timeFromStart), phase_(phase) {}
     Waypoint() = default;
 
-    Pose getPose() {
-        return _pose;
+    Configuration getConfiguration() {
+        return configuration_;
+    }
+
+    Configuration getVelocity() {
+        return velocity_;
     }
 
     Timestamp getTimeFromStart() {
-        return _timeFromStart;
+        return timeFromStart_;
     }
 
     Phase getPhase() {
-        return _phase;
+        return phase_;
     }
 
 private:
-    Pose _pose;
-    Timestamp _timeFromStart;
-    Phase _phase;
+    Configuration configuration_;
+    Configuration velocity_;
+    Timestamp timeFromStart_{0};
+    Phase phase_{Phase::SUPPORT};
 };
 
 #endif  // _WAYPOINT_HPP

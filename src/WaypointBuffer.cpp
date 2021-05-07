@@ -4,43 +4,43 @@
 #include <cstdint>
 
 
-WaypointBuffer::WaypointBuffer() : _head(SIZE - 1), _tail(0), _current_size(0) {
+WaypointBuffer::WaypointBuffer() : head_(SIZE - 1), tail_(0), current_size_(0) {
 }
 
 
-void WaypointBuffer::add(Waypoint pose) {
-    if (_current_size < SIZE) {
-        ++_current_size;
+void WaypointBuffer::add(Waypoint waypoint) {
+    if (current_size_ < SIZE) {
+        ++current_size_;
     } else {
-        _tail = (_tail + 1) & SIZE;
+        tail_ = (tail_ + 1) & SIZE;
     }
 
-    _head = (_head + 1) & SIZE;
-    _buffer[_head] = pose;
+    head_ = (head_ + 1) & SIZE;
+    buffer_[head_] = waypoint;
 }
 
 
 void WaypointBuffer::clear() {
-    _head = SIZE - 1;
-    _tail = 0;
-    _current_size = 0;
+    head_ = SIZE - 1;
+    tail_ = 0;
+    current_size_ = 0;
 }
 
 
 Waypoint WaypointBuffer::end() {
-    return _buffer[_head];
+    return buffer_[head_];
 }
 
 
 Waypoint WaypointBuffer::at(uint8_t index) {
-    if (index >= _current_size && _current_size != 0) {
-        index = index % _current_size;
+    if (index >= current_size_ && current_size_ != 0) {
+        index = index % current_size_;
     }
 
-    return _buffer[(_tail + index) & SIZE];
+    return buffer_[(tail_ + index) & SIZE];
 }
 
 
 uint8_t WaypointBuffer::size() {
-    return _current_size;
+    return current_size_;
 }
