@@ -1,9 +1,7 @@
-#include "Pose.hpp"
 #include "Timestamp.hpp"
 #include "Trajectory.hpp"
 #include "Waypoint.hpp"
 
-#include "Eigen/Eigen"
 #include <cstdint>
 
 

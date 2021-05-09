@@ -1,5 +1,4 @@
-#ifndef _WAYPOINT_HPP
-#define _WAYPOINT_HPP
+#pragma once
 
 #include "Configuration.hpp"
 #include "Timestamp.hpp"
@@ -39,5 +38,3 @@ private:
     Timestamp timeFromStart_{0};
     Phase phase_{Phase::SUPPORT};
 };
-
-#endif  // _WAYPOINT_HPP

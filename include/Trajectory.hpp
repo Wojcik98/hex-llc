@@ -1,12 +1,10 @@
-#ifndef _TRAJECTORY_HPP
-#define _TRAJECTORY_HPP
+#pragma once
 
 #include "Configuration.hpp"
 #include "Timestamp.hpp"
 #include "Waypoint.hpp"
 #include "WaypointBuffer.hpp"
 
-#include "Eigen/Eigen"
 
 using Coeffs = Eigen::Matrix4f;
 
@@ -29,5 +27,3 @@ private:
 
     WaypointBuffer _buffer;
 };
-
-#endif  // _TRAJECTORY_HPP

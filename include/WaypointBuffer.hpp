@@ -1,5 +1,4 @@
-#ifndef _WAYPOINT_BUFFER_HPP
-#define _WAYPOINT_BUFFER_HPP
+#pragma once
 
 #include "Waypoint.hpp"
 
@@ -25,5 +24,3 @@ private:
     uint8_t tail_;
     uint8_t current_size_;
 };
-
-#endif  // _WAYPOINT_BUFFER_HPP

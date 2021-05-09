@@ -1,8 +1,5 @@
-#ifndef _POSE_HPP
-#define _POSE_HPP
+#pragma once
 
 #include "Eigen/Eigen"
 
 using Pose = Eigen::Matrix4f;
-
-#endif  // _POSE_HPP
