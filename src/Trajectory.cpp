@@ -5,18 +5,13 @@
 #include <cstdint>
 
 
-Trajectory::Trajectory() {
-    // _buffer.add(Waypoint())
-}
-
-
 void Trajectory::addWaypoint(Waypoint waypoint) {
-    _buffer.add(waypoint);
+    buffer_.add(waypoint);
 }
 
 
 Timestamp Trajectory::finishTime() {
-    return _buffer.end().getTimeFromStart();
+    return buffer_.end().getTimeFromStart();
 }
 
 
@@ -28,14 +23,14 @@ bool Trajectory::finished(Timestamp time) {
 Configuration Trajectory::getConfiguration(Timestamp time) {
     uint8_t next_index = 1;
 
-    for (; next_index < _buffer.size(); ++next_index) {
-        if (_buffer.at(next_index).getTimeFromStart() > time) {
+    for (; next_index < buffer_.size(); ++next_index) {
+        if (buffer_.at(next_index).getTimeFromStart() > time) {
             break;
         }
     }
 
-    Waypoint next_waypoint = _buffer.at(next_index);
-    Waypoint prev_waypoint = _buffer.at(next_index - 1);
+    Waypoint next_waypoint = buffer_.at(next_index);
+    Waypoint prev_waypoint = buffer_.at(next_index - 1);
 
     Duration duration = next_waypoint.getTimeFromStart() - prev_waypoint.getTimeFromStart();
 
@@ -45,26 +40,26 @@ Configuration Trajectory::getConfiguration(Timestamp time) {
     Configuration v1 = next_waypoint.getVelocity();
 
     Coeffs coeffs;
+    Waypoint::Interpolation interpolation = next_waypoint.getInterpolation();
 
-    if (next_waypoint.getPhase() == Waypoint::Phase::RAISE) {
+    if (interpolation == Waypoint::Interpolation::END_ACCEL_0) {
         coeffs = interpolationCoeffsZeroEndAccel(x0, x1, v0, duration);
-    } else {    // FALL or SUPPORT
+    } else if (interpolation == Waypoint::Interpolation::ENDPOINTS_POS_AND_VEL) {
         coeffs = interpolationCoeffs(x0, x1, v0, v1, duration);
+    } else if (interpolation == Waypoint::Interpolation::LINEAR) {
+        coeffs = interpolationLinear(x0, x1, duration);
     }
 
-    Configuration powers(1, time, time * time, time * time * time);
+    Timestamp dt = time - prev_waypoint.getTimeFromStart();
+    Configuration powers(1, dt, dt * dt, dt * dt * dt);
     Configuration result = coeffs * powers;
-
-    // Eigen::Matrix4f result = Eigen::Matrix4f::Identity();
-    // result.row(3).head<3>() = raw.head<3>();
-    // result.topLeftCorner<3, 3>() = Eigen::AngleAxisf(raw(3), Eigen::Vector3f::UnitZ()).toRotationMatrix();
 
     return result;
 }
 
 
 void Trajectory::clear() {
-    _buffer.clear();
+    buffer_.clear();
 }
 
 
@@ -90,6 +85,19 @@ Coeffs Trajectory::interpolationCoeffsZeroEndAccel(const Configuration &x0, cons
     result.col(1) = v0;
     result.col(2) = 3.0F * (x1 - x0 - v0 * duration) / (2.0F * duration * duration);
     result.col(3) = (x1 - x0 - v0 * duration) / (-2.0F * duration * duration * duration);
+
+    return result;
+}
+
+
+Coeffs Trajectory::interpolationLinear(const Configuration &x0, const Configuration &x1,
+                                       Duration duration) {
+    Coeffs result;
+
+    result.col(0) = x0;
+    result.col(1) = (x1 - x0) / duration;
+    result.col(2).setZero();
+    result.col(3).setZero();
 
     return result;
 }

@@ -6,14 +6,14 @@
 
 class Waypoint {
 public:
-    enum Phase {
-        SUPPORT,
-        RAISE,
-        FALL
+    enum Interpolation {
+        ENDPOINTS_POS_AND_VEL,
+        END_ACCEL_0,
+        LINEAR
     };
 
-    Waypoint(Configuration configuration, Configuration velocity, Timestamp timeFromStart, Phase phase)
-        : configuration_(configuration), velocity_(velocity), timeFromStart_(timeFromStart), phase_(phase) {}
+    Waypoint(Configuration configuration, Configuration velocity, Timestamp timeFromStart, Interpolation interpolation)
+        : configuration_(configuration), velocity_(velocity), timeFromStart_(timeFromStart), interpolation_(interpolation) {}
     Waypoint() = default;
 
     Configuration getConfiguration() {
@@ -28,13 +28,13 @@ public:
         return timeFromStart_;
     }
 
-    Phase getPhase() {
-        return phase_;
+    Interpolation getInterpolation() {
+        return interpolation_;
     }
 
 private:
     Configuration configuration_;
     Configuration velocity_;
     Timestamp timeFromStart_{0};
-    Phase phase_{Phase::SUPPORT};
+    Interpolation interpolation_{Interpolation::LINEAR};
 };

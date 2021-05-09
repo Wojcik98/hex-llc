@@ -10,7 +10,7 @@ using Coeffs = Eigen::Matrix4f;
 
 class Trajectory {
 public:
-    explicit Trajectory();
+    explicit Trajectory() = default;
 
     void addWaypoint(Waypoint waypoint);
     Timestamp finishTime();
@@ -24,6 +24,8 @@ private:
                                Duration duration);
     Coeffs interpolationCoeffsZeroEndAccel(const Configuration &x0, const Configuration &x1,
                                            const Configuration &v0, Duration duration);
+    Coeffs interpolationLinear(const Configuration &x0, const Configuration &x1,
+                               Duration duration);
 
-    WaypointBuffer _buffer;
+    WaypointBuffer buffer_;
 };
