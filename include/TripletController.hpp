@@ -8,13 +8,13 @@
 
 using Coeffs = Eigen::Matrix4f;
 
-class TripodTrajectory {
+class TripletController {
 public:
-    explicit TripodTrajectory() = default;
+    explicit TripletController() = default;
 
-    void addWaypoint(Pose pose, Duration duration);
+    void addWaypoint(const Pose &pose, Duration duration, Timestamp time);
+    void addDelay(Duration duration, Timestamp time);
     Pose getPose(Timestamp time);
-    Timestamp finishTime();
     bool finished(Timestamp time);
     void clear();
 

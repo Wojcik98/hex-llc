@@ -29,6 +29,11 @@ Configuration Trajectory::getConfiguration(Timestamp time) {
         }
     }
 
+    // Single waypoint in buffer or no next waypoint found, return latest known configuration
+    if (buffer_.size() == 1 || buffer_.at(next_index).getTimeFromStart() <= time) {
+        return buffer_.at(next_index).getConfiguration();
+    }
+
     Waypoint next_waypoint = buffer_.at(next_index);
     Waypoint prev_waypoint = buffer_.at(next_index - 1);
 

@@ -3,6 +3,6 @@
 #include "Pose.hpp"
 
 
-struct Triangle {
+struct Triplet {
     Pose upper, middle, lower;
 };

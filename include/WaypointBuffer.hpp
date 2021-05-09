@@ -17,7 +17,7 @@ public:
     uint8_t size();
 
 private:
-    static const uint8_t SIZE = 8;
+    static const uint8_t SIZE = 16;
 
     Waypoint buffer_[SIZE];
     uint8_t head_;

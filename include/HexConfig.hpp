@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Pose.hpp"
-#include "Triangle.hpp"
+#include "Triplet.hpp"
 
 
 struct HexConfig {
@@ -11,6 +11,6 @@ struct HexConfig {
     };
 
     Pose bodyToLeg[6];
-    Triangle triangleCenterToEndEffectors;
+    Triplet tripletCenterToEndEffectors;
     // TODO joints calibration and servo channels
 };

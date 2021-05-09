@@ -9,7 +9,7 @@ class Odometry {
 public:
     explicit Odometry() = default;
 
-    void addWaypoint(Pose pose, Duration duration);
+    void addWaypoint(Pose pose, Duration duration, Timestamp time);
     Pose getPose(Timestamp time);
 
 private:
