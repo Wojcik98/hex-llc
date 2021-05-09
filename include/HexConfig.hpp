@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LegDescription.hpp"
 #include "Pose.hpp"
 #include "Triplet.hpp"
 
@@ -11,6 +12,6 @@ struct HexConfig {
     };
 
     Pose bodyToLeg[6];
-    Triplet tripletCenterToEndEffectors;
-    // TODO joints calibration and servo channels
+    Triplet leftTripletCenterToEndEffectors;
+    LegDescription legDescription;
 };

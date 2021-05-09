@@ -1,6 +1,11 @@
 #pragma once
 
 
+struct LegJoints {
+    float joints[3];
+};
+
+
 struct Joints {
-    float joints[6];
+    LegJoints legs[6];
 };

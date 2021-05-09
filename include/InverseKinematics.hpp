@@ -9,6 +9,9 @@ class InverseKinematics {
 public:
     explicit InverseKinematics() = default;
 
-    Joints getJoints(const Pose &body_pose, const Pose &left_pose, const Pose &right_pose,
+    Joints getJoints(const Pose &bodyPose, const Pose &leftPose, const Pose &rightPose,
                      const HexConfig &config);
+
+private:
+    LegJoints getLegJoints(const Pose &endEffector, const HexConfig &config);
 };

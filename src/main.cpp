@@ -1,4 +1,5 @@
 #include "Trajectory.hpp"
+#include "HexController.hpp"
 
 #include "mbed.h"
 #include "stm32f4xx.h"
@@ -41,6 +42,8 @@ volatile uint32_t cmdCnt = 0;
 volatile uint8_t changeBuffer = 0;
 volatile uint8_t spiCmd;
 volatile uint8_t receivingTrajectory = 0;
+
+HexController hexController;
 
 void MX_TIM6_Init() {
     __HAL_RCC_TIM6_CLK_ENABLE();
