@@ -15,6 +15,7 @@ public:
     void addWaypoint(const Pose &pose, Duration duration, Timestamp time);
     void addDelay(Duration duration, Timestamp time);
     Pose getPose(Timestamp time);
+    Timestamp finishTime();
     bool finished(Timestamp time);
     void clear();
 

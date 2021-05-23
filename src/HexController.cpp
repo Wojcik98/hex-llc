@@ -26,9 +26,19 @@ void HexController::addWaypoint(Pose pose, Duration duration, Timestamp time) {
 
 
 Joints HexController::getJoints(Timestamp time) {
-    if (lastTriplet_ == Side::LEFT && rightTriplet_.finished(time)) {
-        // TODO add last waypoint from left and add delay to left
-    }
+    // TODO(): stopping behavior?
+    // if (lastTriplet_ == Side::LEFT && rightTriplet_.finished(time)) {
+    //     Pose last_pose = leftTriplet_.getPose(leftTriplet_.finishTime());
+    //     rightTriplet_.addWaypoint(last_pose, 42, time);
+    //     leftTriplet_.addDelay(42, time);
+    //     lastTriplet_ = Side::RIGHT;
+    // }
+    // if (lastTriplet_ == Side::RIGHT && leftTriplet_.finished(time)) {
+    //     Pose last_pose = rightTriplet_.getPose(rightTriplet_.finishTime());
+    //     leftTriplet_.addWaypoint(last_pose, 42, time);
+    //     rightTriplet_.addDelay(42, time);
+    //     lastTriplet_ = Side::LEFT;
+    // }
 
     return inverseKinematics_.getJoints(
         odometry_.getPose(time),

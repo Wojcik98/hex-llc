@@ -57,6 +57,11 @@ Pose TripletController::getPose(Timestamp time) {
 }
 
 
+Timestamp TripletController::finishTime() {
+    return trajectory_.finishTime();
+}
+
+
 bool TripletController::finished(Timestamp time) {
     return trajectory_.finished(time);
 }

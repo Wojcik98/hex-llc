@@ -13,5 +13,7 @@ public:
                      const HexConfig &config);
 
 private:
+    constexpr static const float PI = 3.1415926535F;
+
     LegJoints getLegJoints(const Pose &endEffector, const HexConfig &config);
 };

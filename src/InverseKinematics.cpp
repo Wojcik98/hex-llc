@@ -28,18 +28,15 @@ Joints InverseKinematics::getJoints(const Pose &bodyPose, const Pose &leftPose, 
     result.legs[HexConfig::Leg::R3] = getLegJoints(legBase.inverse() * bodyToLeft * ee, config);
     
     // Right triplet
-    ee = config.leftTripletCenterToEndEffectors.upper;
-    ee.col(3)(1) *= -1.0F;  // invert y
+    ee = config.rightTripletCenterToEndEffectors.upper;
     legBase = config.bodyToLeg[HexConfig::Leg::L1];
     result.legs[HexConfig::Leg::L1] = getLegJoints(legBase.inverse() * bodyToLeft * ee, config);
 
-    ee = -config.leftTripletCenterToEndEffectors.middle;
-    ee.col(3)(1) *= -1.0F;  // invert y
+    ee = config.rightTripletCenterToEndEffectors.middle;
     legBase = config.bodyToLeg[HexConfig::Leg::R2];
     result.legs[HexConfig::Leg::R2] = getLegJoints(legBase.inverse() * bodyToLeft * ee, config);
 
-    ee = -config.leftTripletCenterToEndEffectors.lower;
-    ee.col(3)(1) *= -1.0F;  // invert y
+    ee = config.rightTripletCenterToEndEffectors.lower;
     legBase = config.bodyToLeg[HexConfig::Leg::L3];
     result.legs[HexConfig::Leg::L3] = getLegJoints(legBase.inverse() * bodyToLeft * ee, config);
 
@@ -48,8 +45,6 @@ Joints InverseKinematics::getJoints(const Pose &bodyPose, const Pose &leftPose, 
 
 
 LegJoints InverseKinematics::getLegJoints(const Pose &endEffector, const HexConfig &config) {
-    static const float PI = 3.1415926535F;
-
     float x = endEffector(0);
     float y = endEffector(1);
     float z = endEffector(2);
