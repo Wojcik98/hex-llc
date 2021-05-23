@@ -11,7 +11,7 @@ class CommandEncoder {
 public:
     explicit CommandEncoder() = default;
 
-    uint16_t getCommand(const Joints &joints, const HexConfig &config, uint8_t out[]);
+    uint16_t encodeCommand(const Joints &joints, const HexConfig &config, volatile uint8_t out[]);
 
 private:
     static const uint8_t MULTIPLE_TARGETS_CMD = 0x9F;

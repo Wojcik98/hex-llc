@@ -6,7 +6,7 @@
 #include <cstdint>
 
 
-uint16_t CommandEncoder::getCommand(const Joints &joints, const HexConfig &config, uint8_t out[]) {
+uint16_t CommandEncoder::encodeCommand(const Joints &joints, const HexConfig &config, volatile uint8_t out[]) {
     uint8_t leg = 0;
     uint8_t joint = 0;
     uint16_t shift = 0;

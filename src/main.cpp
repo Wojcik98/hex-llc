@@ -1,31 +1,37 @@
+#include "CommandEncoder.hpp"
+#include "HexConfig.hpp"
+#include "InverseKinematics.hpp"
+#include "Joints.hpp"
+#include "Odometry.hpp"
+#include "Timestamp.hpp"
 #include "Trajectory.hpp"
 #include "HexController.hpp"
 
+#include "TripletController.hpp"
 #include "mbed.h"
 #include "stm32f4xx.h"
+#include <cstdint>
 
 // Memory requirements
 // Buffer:
-// 250Hz * 2s * 18joints * 2B/joint * 2buffers = 36kB
+// 18joints * 2B/joint + 3B(header) = 39B
 
-#define BUFFER_SIZE 40000
+#define SERVO_BUFFER_SIZE 100
+#define CMD_BUFFER_SIZE 500
+
 #define SERVO_FREQ 250
-// #define SERVO_FREQ 1
+#define UPDATE_PERIOD 4
 #define JOINTS 18
-// #define JOINTS 1
-#define TRAJECTORY_TIME 1
-// #define TRAJECTORY_TIME 1
 #define HEADER_SIZE 3
 #define JOINT_CMD_SIZE 2
-#define TOTAL_CMD_NUMBER (TRAJECTORY_TIME * SERVO_FREQ)
 #define SINGLE_CMD_SIZE (HEADER_SIZE + JOINTS * JOINT_CMD_SIZE)
-#define TRAJECTORY_LENGTH (TOTAL_CMD_NUMBER * SINGLE_CMD_SIZE)
 
 #define CMD_TRAJECTORY_NOW 42
 #define CMD_TRAJECTORY_LOOP 43
 #define CMD_CURRENT_STEP 23
 
-#define WAIT_TIME_MS 1000 
+#define WAIT_TIME_MS 1000
+
 DigitalOut led1(LED1);
 
 TIM_HandleTypeDef htim6;
@@ -35,7 +41,8 @@ SPI_HandleTypeDef hspi3;
 DMA_HandleTypeDef dma_spi3_rx;
 
 volatile uint8_t maestroInit = 0xAA;
-volatile uint8_t buffers[2][BUFFER_SIZE];
+volatile uint8_t servoBuffer[SERVO_BUFFER_SIZE];
+volatile uint8_t cmdBuffer[CMD_BUFFER_SIZE];
 volatile uint8_t bufferUsed = 0;
 volatile uint8_t bufferChanged = 0;
 volatile uint32_t cmdCnt = 0;
@@ -43,7 +50,20 @@ volatile uint8_t changeBuffer = 0;
 volatile uint8_t spiCmd;
 volatile uint8_t receivingTrajectory = 0;
 
+volatile Timestamp timestamp = 0;
+
+CommandEncoder commandEncoder;
 HexController hexController;
+HexConfig hexConfig;
+InverseKinematics inverseKinematics;
+Odometry odometry;
+TripletController leftTriplet;
+TripletController rightTriplet;
+
+
+// *************************************************************************************************
+// Peripherals init
+// *************************************************************************************************
 
 void MX_TIM6_Init() {
     __HAL_RCC_TIM6_CLK_ENABLE();
@@ -59,6 +79,7 @@ void MX_TIM6_Init() {
     HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
     HAL_TIM_Base_Start_IT(&htim6);
 }
+
 
 static void MX_USART6_UART_Init(void) {
     __HAL_RCC_USART6_CLK_ENABLE();
@@ -90,6 +111,7 @@ static void MX_USART6_UART_Init(void) {
     NVIC_EnableIRQ(USART6_IRQn);
 }
 
+
 void HAL_UART_MspInit(UART_HandleTypeDef* huart) {
     __HAL_RCC_DMA2_CLK_ENABLE();
 
@@ -110,6 +132,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart) {
     HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
 }
 
+
 void MX_SPI3_Init() {
     // PB10 - SCK
     // PC1  - MOSI
@@ -129,6 +152,7 @@ void MX_SPI3_Init() {
 
     HAL_NVIC_EnableIRQ(SPI3_IRQn);
 }
+
 
 void HAL_SPI_MspInit(SPI_HandleTypeDef *hspi) {
     static DMA_HandleTypeDef hdma_tx;
@@ -218,87 +242,101 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef *hspi) {
     HAL_NVIC_EnableIRQ(SPI3_IRQn);
 }
 
+
+// *************************************************************************************************
+// Bare-bone interrupt handlers
+// *************************************************************************************************
+
 extern "C" {
 void USART6_IRQHandler() {
     HAL_UART_IRQHandler(&huart6);
 }
 
+
 void DMA2_Stream6_IRQHandler(void) {
     HAL_DMA_IRQHandler(&dma_uart6_tx);
 }
+
 
 void TIM6_DAC_IRQHandler() {
     HAL_TIM_IRQHandler(&htim6);
 }
 
+
 void SPI3_IRQHandler(void) {
     HAL_SPI_IRQHandler(&hspi3);
 }
 
+
 void DMA1_Stream2_IRQHandler(void) {
     HAL_DMA_IRQHandler(hspi3.hdmarx);
 }
+
 
 void DMA1_Stream5_IRQHandler(void) {
     HAL_DMA_IRQHandler(hspi3.hdmatx);
 }
 }
 
+
+// *************************************************************************************************
+// HAL Interrupt handlers
+// *************************************************************************************************
+
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 }
+
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-    if (bufferChanged) {
-        bufferUsed = (bufferUsed + 1) & 1;
-        bufferChanged = 0;
-        cmdCnt = 0;
-    }
+    led1 = !led1;
+    timestamp += UPDATE_PERIOD;
 
-    volatile uint8_t *cmdPtr = buffers[bufferUsed] + cmdCnt * SINGLE_CMD_SIZE;
-    HAL_UART_Transmit_DMA(&huart6, (uint8_t *) cmdPtr, SINGLE_CMD_SIZE);
+    Pose body_pose = odometry.getPose(timestamp);
+    Pose left_pose = leftTriplet.getPose(timestamp);
+    Pose right_pose = rightTriplet.getPose(timestamp);
+    Joints joints = inverseKinematics.getJoints(body_pose, left_pose, right_pose, hexConfig);
 
-    if (cmdCnt + 1 < TOTAL_CMD_NUMBER) {
-        ++cmdCnt;
-    } else if (changeBuffer) {
-        bufferUsed = (bufferUsed + 1) & 1;
-        changeBuffer = 0;
-        cmdCnt = 0;
-    }
+    uint16_t cmd_size = commandEncoder.encodeCommand(joints, hexConfig, servoBuffer);
+
+    HAL_UART_Transmit_DMA(&huart6, (uint8_t *) servoBuffer, cmd_size);
 }
+
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
-    led1 = !led1;
-    if (spiCmd == CMD_CURRENT_STEP) {
-        HAL_SPI_Transmit_DMA(&hspi3, (uint8_t *) &cmdCnt, 1);
-    }
-    if (spiCmd == CMD_TRAJECTORY_NOW) {
-        if (!receivingTrajectory) {
-            volatile uint8_t *buffer = buffers[(bufferUsed + 1) & 1];
-            receivingTrajectory = 1;
-            HAL_SPI_Receive_DMA(&hspi3, (uint8_t *) buffer, TRAJECTORY_LENGTH);
-        } else {
-            receivingTrajectory = 0;
-            bufferChanged = 1;  // TODO make this interrupt higher priority than timer
-            spiCmd = 0;
-            HAL_SPI_Receive_DMA(&hspi3, (uint8_t *) &spiCmd, 1);
-        }
-    }
-    if (spiCmd == CMD_TRAJECTORY_LOOP) {
-        if (!receivingTrajectory) {
-            volatile uint8_t *buffer = buffers[(bufferUsed + 1) & 1];
-            receivingTrajectory = 1;
-            HAL_SPI_Receive_DMA(&hspi3, (uint8_t *) buffer, TRAJECTORY_LENGTH);
-        } else {
-            receivingTrajectory = 0;
-            changeBuffer = 1;
-            spiCmd = 0;
-            HAL_SPI_Receive_DMA(&hspi3, (uint8_t *) &spiCmd, 1);
-        }
-    }
+    // led1 = !led1;
+    // if (spiCmd == CMD_CURRENT_STEP) {
+    //     HAL_SPI_Transmit_DMA(&hspi3, (uint8_t *) &cmdCnt, 1);
+    // }
+    // if (spiCmd == CMD_TRAJECTORY_NOW) {
+    //     if (!receivingTrajectory) {
+    //         volatile uint8_t *buffer = buffers[(bufferUsed + 1) & 1];
+    //         receivingTrajectory = 1;
+    //         HAL_SPI_Receive_DMA(&hspi3, (uint8_t *) buffer, TRAJECTORY_LENGTH);
+    //     } else {
+    //         receivingTrajectory = 0;
+    //         bufferChanged = 1;  // TODO make this interrupt higher priority than timer
+    //         spiCmd = 0;
+    //         HAL_SPI_Receive_DMA(&hspi3, (uint8_t *) &spiCmd, 1);
+    //     }
+    // }
+    // if (spiCmd == CMD_TRAJECTORY_LOOP) {
+    //     if (!receivingTrajectory) {
+    //         volatile uint8_t *buffer = buffers[(bufferUsed + 1) & 1];
+    //         receivingTrajectory = 1;
+    //         HAL_SPI_Receive_DMA(&hspi3, (uint8_t *) buffer, TRAJECTORY_LENGTH);
+    //     } else {
+    //         receivingTrajectory = 0;
+    //         changeBuffer = 1;
+    //         spiCmd = 0;
+    //         HAL_SPI_Receive_DMA(&hspi3, (uint8_t *) &spiCmd, 1);
+    //     }
+    // }
 }
+
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     if (spiCmd == CMD_CURRENT_STEP) {
@@ -307,10 +345,16 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     }
 }
 
+
+
+// *************************************************************************************************
+// Main
+// *************************************************************************************************
+
 int main() {
     MX_USART6_UART_Init();
 
-    // TODO set constant speed
+    // TODO set constant maestro uart speed
     HAL_UART_Transmit_DMA(&huart6, (uint8_t*) &maestroInit, 1);
 
     MX_TIM6_Init();
